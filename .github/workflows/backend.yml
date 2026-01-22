@@ -11,7 +11,7 @@ on:
       - 'apps/backend/**'
 
 jobs:
-  build-and-test:
+  backend-checks:
     runs-on: ubuntu-latest
     defaults:
       run:

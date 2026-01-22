@@ -1,245 +1,98 @@
-# Lumenpulse Backend
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-A modern Next.js backend service built with TypeScript, App Router, and professional development tooling.
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-## 🚀 Features
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-- **Next.js 16** with App Router
-- **TypeScript** for type safety
-- **ESLint + Prettier** for code quality
-- **Jest** for testing
-- **Environment configuration** with `.env.example`
-- **Health check endpoint** for monitoring
-- **API routes** structure ready for expansion
+## Description
 
-## 📋 Prerequisites
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-- Node.js 18+ 
-- npm, yarn, or pnpm
+## Project setup
 
-## 🛠️ Installation
-
-1. **Clone and navigate to the backend directory:**
-   ```bash
-   cd app/backend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
-
-3. **Set up environment variables:**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Edit `.env.local` with your specific configuration values.
-
-## 🚀 Development
-
-### Start the development server:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+$ npm install
 ```
 
-The server will start on `http://localhost:3001` (or your configured PORT).
+## Compile and run the project
 
-### Available Scripts:
-
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Run ESLint with auto-fix |
-| `npm run format` | Format code with Prettier |
-| `npm run format:check` | Check code formatting |
-| `npm run type-check` | Run TypeScript type checking |
-| `npm run test` | Run tests |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run test:coverage` | Run tests with coverage |
-| `npm run clean` | Clean build artifacts |
-
-## 📡 API Endpoints
-
-### Health Check
-- **GET** `/api/health` - Health check endpoint
-- **POST** `/api/health` - Health check endpoint (POST)
-
-**Response:**
-```json
-{
-  "ok": true,
-  "service": "backend",
-  "timestamp": "2024-01-20T10:30:00.000Z",
-  "uptime": 123.45,
-  "version": "0.1.0"
-}
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Key environment variables (see `.env.example` for complete list):
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Node environment | `development` |
-| `PORT` | Server port | `3001` |
-| `HOSTNAME` | Server hostname | `localhost` |
-| `API_BASE_URL` | API base URL | `http://localhost:3001` |
-| `CORS_ORIGIN` | CORS origin | `http://localhost:3000` |
-| `LOG_LEVEL` | Logging level | `info` |
-
-### TypeScript Configuration
-
-- Strict mode enabled
-- Path aliases configured (`@/*` → `src/*`)
-- Next.js type checking
-
-### ESLint & Prettier
-
-- ESLint with Next.js recommended rules
-- Prettier for consistent formatting
-- Pre-commit hooks recommended
-
-## 🧪 Testing
-
-### Run all tests:
 ```bash
-npm test
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
 ```
 
-### Run tests in watch mode:
+## Run tests
+
 ```bash
-npm run test:watch
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
 ```
 
-### Generate coverage report:
+## Deployment
+
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+
 ```bash
-npm run test:coverage
+$ npm install -g @nestjs/mau
+$ mau deploy
 ```
 
-## 📁 Project Structure
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
-```
-src/
-├── app/
-│   ├── api/
-│   │   └── health/
-│   │       └── route.ts      # Health check endpoint
-│   ├── layout.tsx            # Root layout
-│   ├── page.tsx              # Home page
-│   └── globals.css           # Global styles
-├── lib/                      # Utility functions
-├── types/                    # TypeScript type definitions
-└── middleware.ts             # Next.js middleware (optional)
-```
+## Resources
 
-## 🔍 Code Quality
+Check out a few resources that may come in handy when working with NestJS:
 
-### Linting
-```bash
-npm run lint          # Check for linting issues
-npm run lint:fix      # Auto-fix linting issues
-```
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
 
-### Formatting
-```bash
-npm run format        # Format all files
-npm run format:check  # Check formatting
-```
+## Support
 
-### Type Checking
-```bash
-npm run type-check    # TypeScript type checking
-```
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
-## 🚀 Deployment
+## Stay in touch
 
-### Build for production:
-```bash
-npm run build
-```
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
 
-### Start production server:
-```bash
-npm start
-```
+## License
 
-### Environment Setup for Production
-
-1. Set `NODE_ENV=production`
-2. Configure all required environment variables
-3. Ensure proper CORS origins
-4. Set up monitoring and logging
-
-## 🤝 Contributing
-
-Please read [CONTRIBUTOR_README.md](./CONTRIBUTOR_README.md) for detailed contribution guidelines.
-
-## 📝 License
-
-This project is part of the Lumenpulse ecosystem.
-
-## 🆘 Troubleshooting
-
-### Common Issues:
-
-1. **Port already in use:**
-   - Change `PORT` in `.env.local`
-   - Kill existing process: `lsof -ti:3001 | xargs kill`
-
-2. **TypeScript errors:**
-   - Run `npm run type-check`
-   - Ensure all dependencies are installed
-
-3. **ESLint errors:**
-   - Run `npm run lint:fix`
-   - Check `.eslintrc.json` configuration
-
-4. **Environment variables not working:**
-   - Ensure `.env.local` exists
-   - Restart development server after changes
-   - Check variable names match `.env.example`
-
-### Getting Help:
-
-- Check the [Next.js documentation](https://nextjs.org/docs)
-- Review existing issues in the repository
-- Contact the development team
-
-## 📊 Monitoring
-
-### Health Check
-
-Monitor the health endpoint:
-```bash
-curl http://localhost:3001/api/health
-```
-
-### Logs
-
-Development logs are shown in the console. For production, consider implementing structured logging.
-
-## 🔮 Future Enhancements
-
-- [ ] Database integration (PostgreSQL/MongoDB)
-- [ ] Authentication & Authorization
-- [ ] Rate limiting
-- [ ] API documentation (OpenAPI/Swagger)
-- [ ] Integration with Soroban
-- [ ] Caching layer
-- [ ] Background jobs
-- [ ] Monitoring & alerting
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

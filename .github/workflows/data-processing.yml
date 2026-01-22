@@ -11,7 +11,7 @@ on:
       - 'apps/data-processing/**'
 
 jobs:
-  build-and-test:
+  data-processing-checks:
     runs-on: ubuntu-latest
     defaults:
       run:
