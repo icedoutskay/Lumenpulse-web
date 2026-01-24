@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use crate::errors::ContributorError;
 use crate::{ContributorRegistryContract, ContributorRegistryContractClient};
 use soroban_sdk::{testutils::Address as _, Address, Env, String};

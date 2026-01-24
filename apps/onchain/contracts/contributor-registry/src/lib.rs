@@ -43,7 +43,7 @@ impl ContributorRegistryContract {
         address.require_auth();
 
         // Validate GitHub handle (must not be empty)
-        if github_handle.len() == 0 {
+        if github_handle.is_empty() {
             return Err(ContributorError::InvalidGitHubHandle);
         }
 
