@@ -22,7 +22,7 @@ import { TestController } from './test/test.controller';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false, // Always false for production, and recommended false when using migrations
+        synchronize: false,
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         logging: true,
       }),

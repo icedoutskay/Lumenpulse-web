@@ -64,12 +64,31 @@ export const defaultLoggingConfig: LoggingConfig = {
  */
 export function getLoggingConfig(): LoggingConfig {
   return {
-    enabled: process.env.LOGGING_ENABLED === 'false' ? false : defaultLoggingConfig.enabled,
-    level: (process.env.LOGGING_LEVEL as 'log' | 'warn' | 'error' | undefined) || defaultLoggingConfig.level,
-    includeBody: process.env.LOGGING_INCLUDE_BODY === 'true' ? true : defaultLoggingConfig.includeBody,
-    includeResponse: process.env.LOGGING_INCLUDE_RESPONSE === 'true' ? true : defaultLoggingConfig.includeResponse,
-    includeIP: process.env.LOGGING_INCLUDE_IP !== 'false' ? true : defaultLoggingConfig.includeIP,
-    includeUserAgent: process.env.LOGGING_INCLUDE_USER_AGENT !== 'false' ? true : defaultLoggingConfig.includeUserAgent,
-    excludeRoutes: process.env.LOGGING_EXCLUDE_ROUTES?.split(',') || defaultLoggingConfig.excludeRoutes,
+    enabled:
+      process.env.LOGGING_ENABLED === 'false'
+        ? false
+        : defaultLoggingConfig.enabled,
+    level:
+      (process.env.LOGGING_LEVEL as 'log' | 'warn' | 'error' | undefined) ||
+      defaultLoggingConfig.level,
+    includeBody:
+      process.env.LOGGING_INCLUDE_BODY === 'true'
+        ? true
+        : defaultLoggingConfig.includeBody,
+    includeResponse:
+      process.env.LOGGING_INCLUDE_RESPONSE === 'true'
+        ? true
+        : defaultLoggingConfig.includeResponse,
+    includeIP:
+      process.env.LOGGING_INCLUDE_IP !== 'false'
+        ? true
+        : defaultLoggingConfig.includeIP,
+    includeUserAgent:
+      process.env.LOGGING_INCLUDE_USER_AGENT !== 'false'
+        ? true
+        : defaultLoggingConfig.includeUserAgent,
+    excludeRoutes:
+      process.env.LOGGING_EXCLUDE_ROUTES?.split(',') ||
+      defaultLoggingConfig.excludeRoutes,
   };
 }

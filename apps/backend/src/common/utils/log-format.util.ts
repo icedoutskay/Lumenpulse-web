@@ -16,21 +16,22 @@ export interface LogInfo {
  * Formats the HTTP request log entry
  */
 export function formatHttpLog(info: LogInfo): string {
-  const { method, url, statusCode, durationMs, userAgent, ip, timestamp } = info;
-  
+  const { method, url, statusCode, durationMs, userAgent, ip, timestamp } =
+    info;
+
   const statusColor = getStatusColor(statusCode);
   const coloredStatus = `\x1b[${statusColor}m${statusCode}\x1b[0m`;
-  
+
   let logEntry = `[${timestamp}] [HTTP] ${method} ${url} ${coloredStatus} ${durationMs}ms`;
-  
+
   if (ip) {
     logEntry += ` IP:${ip}`;
   }
-  
+
   if (userAgent) {
     logEntry += ` UA:"${userAgent}"`;
   }
-  
+
   return logEntry;
 }
 

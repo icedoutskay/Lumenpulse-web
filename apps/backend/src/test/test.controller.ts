@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Put, Delete, HttpStatus, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+} from '@nestjs/common';
 
 @Controller('test')
 export class TestController {
@@ -8,7 +16,11 @@ export class TestController {
   }
 
   @Post('submit')
-  submitData(@Body() body: any): { message: string; timestamp: Date; receivedData?: any } {
+  submitData(@Body() body: Record<string, unknown>): {
+    message: string;
+    timestamp: Date;
+    receivedData?: Record<string, unknown>;
+  } {
     return {
       message: 'Data submitted successfully',
       timestamp: new Date(),
@@ -27,12 +39,15 @@ export class TestController {
   }
 
   @Get('redirect')
-  getRedirect(): any {
+  getRedirect(): Record<string, unknown> {
     return { redirect: true, destination: '/test/hello' };
   }
 
   @Put('update/:id')
-  updateData(@Param('id') id: string, @Body() body: any): { message: string; id: string; updatedData: any } {
+  updateData(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ): { message: string; id: string; updatedData: Record<string, unknown> } {
     return {
       message: 'Data updated successfully',
       id,
