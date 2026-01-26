@@ -155,25 +155,33 @@ fn test_hello_numeric_string() {
 #[test]
 fn test_multiple_contract_instances() {
     let env = Env::default();
-    
+
     let contract_id1 = env.register(Contract, ());
     let client1 = ContractClient::new(&env, &contract_id1);
-    
+
     let contract_id2 = env.register(Contract, ());
     let client2 = ContractClient::new(&env, &contract_id2);
-    
+
     let words1 = client1.hello(&String::from_str(&env, "First"));
     let words2 = client2.hello(&String::from_str(&env, "Second"));
-    
+
     assert_eq!(
         words1,
-        vec![&env, String::from_str(&env, "Hello"), String::from_str(&env, "First")]
+        vec![
+            &env,
+            String::from_str(&env, "Hello"),
+            String::from_str(&env, "First")
+        ]
     );
     assert_eq!(
         words2,
-        vec![&env, String::from_str(&env, "Hello"), String::from_str(&env, "Second")]
+        vec![
+            &env,
+            String::from_str(&env, "Hello"),
+            String::from_str(&env, "Second")
+        ]
     );
-    
+
     // Verify they are different contract instances
     assert_ne!(contract_id1, contract_id2);
 }
@@ -185,13 +193,13 @@ fn test_hello_response_structure() {
     let client = ContractClient::new(&env, &contract_id);
 
     let result = client.hello(&String::from_str(&env, "Test"));
-    
+
     // Verify response structure
     assert_eq!(result.len(), 2);
-    
+
     // Verify first element is "Hello"
     assert_eq!(result.get(0).unwrap(), String::from_str(&env, "Hello"));
-    
+
     // Verify second element is the input
     assert_eq!(result.get(1).unwrap(), String::from_str(&env, "Test"));
 }
