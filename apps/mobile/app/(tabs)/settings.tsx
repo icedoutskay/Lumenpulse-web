@@ -1,4 +1,17 @@
 import React from 'react';
+
+import { StyleSheet, Text, View, SafeAreaView, Button } from 'react-native';
+import { useAuth } from '../../src/context/AuthContext';
+import { useRouter } from 'expo-router';
+
+export default function SettingsScreen() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/(tabs)'); // go back to Home tab
+
 import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
@@ -14,6 +27,7 @@ export default function SettingsScreen() {
     } catch (error) {
       console.error('Logout error:', error);
     }
+
   };
 
   return (
@@ -21,12 +35,23 @@ export default function SettingsScreen() {
       <View style={styles.content}>
         <Text style={styles.title}>Settings</Text>
         <Text style={styles.text}>App version: 1.0.0</Text>
+
+        <Text style={styles.text}>
+          Lumenpulse Mobile Contributor Edition
+        </Text>
+
+        {user && (
+          <View style={{ marginTop: 32 }}>
+            <Button title="Logout" onPress={handleLogout} />
+          </View>
+
         <Text style={styles.text}>Lumenpulse Mobile Contributor Edition</Text>
         
         {isAuthenticated && (
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Log Out</Text>
           </TouchableOpacity>
+
         )}
       </View>
     </SafeAreaView>
@@ -54,6 +79,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     marginBottom: 8,
   },
+
+});
+
   logoutButton: {
     position: 'absolute',
     bottom: 24,
@@ -76,3 +104,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
