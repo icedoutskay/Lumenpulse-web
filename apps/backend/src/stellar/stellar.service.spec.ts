@@ -94,7 +94,7 @@ describe('StellarService', () => {
 
     it('should throw HorizonUnavailableException for network errors', async () => {
       const networkError = new NetworkError('Network error');
-      (mockServer.loadAccount as jest.Mock).mockRejectedValueOnce(networkError);
+      (mockServer.loadAccount as jest.Mock).mockRejectedValue(networkError);
 
       await expect(service.getAccountBalances(validPublicKey)).rejects.toThrow(
         HorizonUnavailableException,
