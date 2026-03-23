@@ -1,12 +1,16 @@
+/* eslint-disable prettier/prettier */
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { healthApi } from '../../lib/api';
 import config from '../../lib/config';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const [healthStatus, setHealthStatus] = useState<string>('Checking...');
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +46,14 @@ export default function HomeScreen() {
             <Text style={[styles.subtitle, { color: colors.accent }]}>
               Decentralized Crypto Insights
             </Text>
+
+            {/* Notifications bell */}
+            <TouchableOpacity
+              style={{ position: 'absolute', right: 0, top: 0 }}
+              onPress={() => router.push('/notifications')}
+            >
+              <Ionicons name="notifications-outline" size={28} color={colors.accent} />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.comingSoon}>
@@ -75,7 +87,10 @@ export default function HomeScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.accentSecondary, shadowColor: colors.accentSecondary }]}
+            style={[
+              styles.button,
+              { backgroundColor: colors.accentSecondary, shadowColor: colors.accentSecondary },
+            ]}
           >
             <Text style={styles.buttonText}>Get Started</Text>
           </TouchableOpacity>
