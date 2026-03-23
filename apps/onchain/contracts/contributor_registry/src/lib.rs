@@ -150,8 +150,7 @@ impl ContributorRegistryContract {
             };
             contributor
                 .reputation_score
-                .checked_sub(new_delta)
-                .unwrap_or_default()
+                .saturating_sub(new_delta)
         };
         contributor.reputation_score = new_score;
         env.storage()

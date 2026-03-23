@@ -105,3 +105,20 @@ pub struct ContributionRefundedEvent {
     pub contributor: Address,
     pub amount: i128,
 }
+
+#[contractevent]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProtocolFeeDeductedEvent {
+    #[topic]
+    pub project_id: u64,
+    pub amount: i128,
+}
+
+#[contractevent]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeeConfigChangedEvent {
+    #[topic]
+    pub admin: Address,
+    pub fee_bps: u32,
+    pub treasury: Address,
+}
