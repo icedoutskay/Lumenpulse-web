@@ -46,6 +46,30 @@ export class PortfolioSnapshotDto {
   totalValueUsd: string;
 }
 
+export class PortfolioSummaryResponseDto {
+  @ApiProperty({
+    description: 'Total portfolio value in USD',
+    example: '15420.50',
+  })
+  totalValueUsd: string;
+
+  @ApiProperty({ description: 'Individual asset balances', type: [AssetBalanceDto] })
+  assets: AssetBalanceDto[];
+
+  @ApiProperty({
+    description: 'Timestamp of the last recorded snapshot',
+    nullable: true,
+    example: '2024-02-25T15:30:00Z',
+  })
+  lastUpdated: Date | null;
+
+  @ApiProperty({
+    description: 'Indicates whether the user has a linked Stellar account with snapshots',
+    example: true,
+  })
+  hasLinkedAccount: boolean;
+}
+
 export class GetPortfolioHistoryDto {
   @ApiPropertyOptional({
     description: 'Page number for pagination',

@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   GetPortfolioHistoryDto,
   PortfolioHistoryResponseDto,
+  PortfolioSummaryResponseDto,
 } from './dto/portfolio-snapshot.dto';
 import { PortfolioPerformanceResponseDto } from './dto/portfolio-performance.dto';
 
@@ -29,6 +30,26 @@ import { PortfolioPerformanceResponseDto } from './dto/portfolio-performance.dto
 @UseGuards(JwtAuthGuard)
 export class PortfolioController {
   constructor(private readonly portfolioService: PortfolioService) {}
+
+  @Get('summary')
+  @ApiOperation({
+    summary: 'Get portfolio summary',
+    description:
+      'Returns the latest portfolio snapshot with total USD value and individual asset balances',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Portfolio summary retrieved successfully',
+    type: PortfolioSummaryResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getPortfolioSummary(
+    @Request() req: any,
+  ): Promise<PortfolioSummaryResponseDto> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const userId = req.user.sub as string;
+    return this.portfolioService.getPortfolioSummary(userId);
+  }
 
   @Get('history')
   @ApiOperation({
