@@ -100,13 +100,18 @@ fn test_notification_flow() {
     let reg_client = RegistryClient::new(&env, &reg_id);
     let vault_client = VaultClient::new(&env, &vault_id);
 
-    token_client.initialize(&admin, &7u32, &String::from_str(&env, "Lumen"), &String::from_str(&env, "LUM"));
+    token_client.initialize(
+        &admin,
+        &7u32,
+        &String::from_str(&env, "Lumen"),
+        &String::from_str(&env, "LUM"),
+    );
     reg_client.initialize(&admin);
     vault_client.initialize(&admin);
 
     // Register contributor
     reg_client.register_contributor(&contributor, &String::from_str(&env, "cedarich"));
-    
+
     // Initial reputation should be 0
     assert_eq!(reg_client.get_reputation(&contributor), 0);
 
@@ -115,8 +120,13 @@ fn test_notification_flow() {
 
     // Setup project and deposit
     token_client.mint(&contributor, &10000i128);
-    let project_id = vault_client.create_project(&project_owner, &Symbol::new(&env, "DevTools"), &5000i128, &token_id);
-    
+    let project_id = vault_client.create_project(
+        &project_owner,
+        &Symbol::new(&env, "DevTools"),
+        &5000i128,
+        &token_id,
+    );
+
     // Contributor deposits into the project
     vault_client.deposit(&contributor, &project_id, &1000i128);
 

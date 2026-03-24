@@ -7,8 +7,8 @@ mod storage;
 use errors::ContributorError;
 use events::{AdminChangedEvent, UpgradedEvent};
 use notification_interface::{Notification, NotificationReceiverTrait};
-use soroban_sdk::{contract, contractimpl, Address, BytesN, Env, String, Symbol};
 use soroban_sdk::xdr::FromXdr;
+use soroban_sdk::{contract, contractimpl, Address, BytesN, Env, String, Symbol};
 use storage::{ContributorData, DataKey};
 
 #[contract]
@@ -258,13 +258,20 @@ impl NotificationReceiverTrait for ContributorRegistryContract {
         // Only react to "deposit" events
         if notification.event_type == Symbol::new(&env, "deposit") {
             // Unpack data: (user: Address, project_id: u64, amount: i128)
-            let (user, _project_id, _amount): (Address, u64, i128) = <(Address, u64, i128)>::from_xdr(&env, &notification.data).unwrap();
+            let (user, _project_id, _amount): (Address, u64, i128) =
+                <(Address, u64, i128)>::from_xdr(&env, &notification.data).unwrap();
 
             // Attempt to update reputation (1 point per deposit for now)
             // If the contributor is not registered, this will fail silently or we could register them
-            if let Some(mut contributor) = env.storage().persistent().get::<_, ContributorData>(&DataKey::Contributor(user.clone())) {
+            if let Some(mut contributor) = env
+                .storage()
+                .persistent()
+                .get::<_, ContributorData>(&DataKey::Contributor(user.clone()))
+            {
                 contributor.reputation_score = contributor.reputation_score.saturating_add(1);
-                env.storage().persistent().set(&DataKey::Contributor(user), &contributor);
+                env.storage()
+                    .persistent()
+                    .set(&DataKey::Contributor(user), &contributor);
             }
         }
     }

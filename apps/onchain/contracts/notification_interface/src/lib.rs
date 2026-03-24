@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contracttype, contractclient, Address, Env, Symbol, Bytes};
+use soroban_sdk::{contractclient, contracttype, Address, Bytes, Env, Symbol};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]

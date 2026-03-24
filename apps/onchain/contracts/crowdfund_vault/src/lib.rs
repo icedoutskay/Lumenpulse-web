@@ -8,10 +8,10 @@ mod token;
 
 use errors::CrowdfundError;
 use math::{sqrt_scaled, unscale};
-use soroban_sdk::token::TokenClient;
 use notification_interface::{Notification, NotificationReceiverClient};
-use soroban_sdk::{contract, contractimpl, vec, Address, BytesN, Env, Symbol, Vec};
+use soroban_sdk::token::TokenClient;
 use soroban_sdk::xdr::ToXdr;
+use soroban_sdk::{contract, contractimpl, vec, Address, BytesN, Env, Symbol, Vec};
 use storage::{DataKey, ProjectData};
 
 #[contract]
@@ -363,36 +363,64 @@ impl CrowdfundVaultContract {
         .publish(&env);
 
         // Notify subscribers
-        Self::notify_subscribers(&env, Symbol::new(&env, "deposit"), (user, project_id, amount).to_xdr(&env));
+        Self::notify_subscribers(
+            &env,
+            Symbol::new(&env, "deposit"),
+            (user, project_id, amount).to_xdr(&env),
+        );
 
         Ok(())
     }
 
     /// Add a notification subscriber (admin only)
-    pub fn add_subscriber(env: Env, admin: Address, subscriber: Address) -> Result<(), CrowdfundError> {
+    pub fn add_subscriber(
+        env: Env,
+        admin: Address,
+        subscriber: Address,
+    ) -> Result<(), CrowdfundError> {
         Self::verify_admin(&env, &admin)?;
-        let mut subscribers: Vec<Address> = env.storage().instance().get(&DataKey::Subscribers).unwrap_or(vec![&env]);
+        let mut subscribers: Vec<Address> = env
+            .storage()
+            .instance()
+            .get(&DataKey::Subscribers)
+            .unwrap_or(vec![&env]);
         if !subscribers.contains(&subscriber) {
             subscribers.push_back(subscriber);
-            env.storage().instance().set(&DataKey::Subscribers, &subscribers);
+            env.storage()
+                .instance()
+                .set(&DataKey::Subscribers, &subscribers);
         }
         Ok(())
     }
 
     /// Remove a notification subscriber (admin only)
-    pub fn remove_subscriber(env: Env, admin: Address, subscriber: Address) -> Result<(), CrowdfundError> {
+    pub fn remove_subscriber(
+        env: Env,
+        admin: Address,
+        subscriber: Address,
+    ) -> Result<(), CrowdfundError> {
         Self::verify_admin(&env, &admin)?;
-        let mut subscribers: Vec<Address> = env.storage().instance().get(&DataKey::Subscribers).unwrap_or(vec![&env]);
+        let mut subscribers: Vec<Address> = env
+            .storage()
+            .instance()
+            .get(&DataKey::Subscribers)
+            .unwrap_or(vec![&env]);
         if let Some(index) = subscribers.first_index_of(&subscriber) {
             subscribers.remove(index);
-            env.storage().instance().set(&DataKey::Subscribers, &subscribers);
+            env.storage()
+                .instance()
+                .set(&DataKey::Subscribers, &subscribers);
         }
         Ok(())
     }
 
     /// Internal helper to notify all subscribers
     fn notify_subscribers(env: &Env, event_type: Symbol, data: soroban_sdk::Bytes) {
-        let subscribers: Vec<Address> = env.storage().instance().get(&DataKey::Subscribers).unwrap_or(vec![env]);
+        let subscribers: Vec<Address> = env
+            .storage()
+            .instance()
+            .get(&DataKey::Subscribers)
+            .unwrap_or(vec![env]);
         let notification = Notification {
             source: env.current_contract_address(),
             event_type,
