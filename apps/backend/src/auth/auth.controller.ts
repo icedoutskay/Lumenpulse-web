@@ -33,6 +33,9 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+ // Added imports
+import { NotFoundException } from '@nestjs/common';
+import { ProfileResponseDto } from '../users/dto/profile-response.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -209,11 +212,29 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Profile retrieved successfully',
-    type: ProfileDto,
+    type: ProfileResponseDto, // Changed from ProfileDto
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  getProfile(@Request() req: { user: ProfileDto }) {
-    return new ProfileDto(req.user);
+  async getProfile(@Request() req: { user: { id: string } }) {
+    const user = await this.usersService.findById(req.user.id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    
+    // Returned the full profile with all fields
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      displayName: user.displayName,
+      bio: user.bio,
+      avatarUrl: user.avatarUrl,
+      stellarPublicKey: user.stellarPublicKey,
+      preferences: user.preferences,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 
   @Get('challenge')

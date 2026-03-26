@@ -20,6 +20,7 @@ import { TestController } from './test/test.controller';
 import { SnapshotsModule } from './snapshot/snapshot.module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import stellarConfig from './stellar/config/stellar.config';
+import { TransactionModule } from './transaction/transaction.module';
 
 const appLogger = new Logger('TypeORM');
 
@@ -69,6 +70,7 @@ const appLogger = new Logger('TypeORM');
     EmailModule,
     PortfolioModule,
     SnapshotsModule,
+    TransactionModule
   ],
   controllers: [AppController, TestController, TestExceptionController],
   providers: [
