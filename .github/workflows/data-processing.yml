@@ -13,8 +13,6 @@ on:
 jobs:
   data-processing-checks:
     runs-on: ubuntu-latest
-    env:
-      SENTIMENT_DISABLE_TRANSFORMER: "1"
     defaults:
       run:
         working-directory: ./apps/data-processing
