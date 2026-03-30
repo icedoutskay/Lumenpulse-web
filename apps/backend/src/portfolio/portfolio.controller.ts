@@ -167,4 +167,21 @@ export class PortfolioController {
     const userId = req.user.sub as string;
     return this.portfolioService.getPortfolioPerformance(userId);
   }
+
+  @Get('allocation')
+  @ApiOperation({
+    summary: 'Get portfolio asset allocation',
+    description:
+      'Returns the asset allocation breakdown across all linked accounts for the authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Asset allocation retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getAssetAllocation(@Request() req: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const userId = req.user.sub as string;
+    return this.portfolioService.getAssetAllocation(userId);
+  }
 }
