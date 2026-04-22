@@ -14,6 +14,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 from .models import Base, Article, SocialPost, AnalyticsRecord, NewsInsight, AssetTrend
+from src.analytics.ner_service import NERService
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +44,30 @@ class PostgresService:
                 echo=False,  # Set to True for SQL query logging
             )
             self.SessionLocal = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
+                autocommit=False,
+                autoflush=False,
+                expire_on_commit=False,
+                bind=self.engine,
             )
+            self.ner_service = NERService()
             logger.info("PostgreSQL service initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize PostgreSQL service: {e}")
             raise
+
+    def _ensure_detected_entities(self, article_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Populate detected_entities when absent using the NER service."""
+        normalized = dict(article_data)
+        existing_entities = normalized.get("detected_entities")
+        if isinstance(existing_entities, list) and existing_entities:
+            return normalized
+
+        normalized["detected_entities"] = self.ner_service.extract_entities_from_article(
+            title=normalized.get("title"),
+            summary=normalized.get("summary"),
+            content=normalized.get("content"),
+        )
+        return normalized
 
     @contextmanager
     def get_session(self):
@@ -145,6 +164,8 @@ class PostgresService:
         Returns:
             Article object if successful, None otherwise
         """
+        article_data = self._ensure_detected_entities(article_data)
+
         def _save():
             with self.get_session() as session:
                 # Check if article already exists
@@ -163,6 +184,7 @@ class PostgresService:
                     existing.primary_asset = article_data.get("primary_asset", existing.primary_asset)
                     existing.categories = article_data.get("categories", existing.categories)
                     existing.keywords = article_data.get("keywords", existing.keywords)
+                    existing.detected_entities = article_data.get("detected_entities", existing.detected_entities)
                     existing.language = article_data.get("language", existing.language)
                     existing.published_at = article_data.get("published_at", existing.published_at)
                     existing.fetched_at = article_data.get("fetched_at", existing.fetched_at)
@@ -191,6 +213,7 @@ class PostgresService:
                         primary_asset=article_data.get("primary_asset"),
                         categories=article_data.get("categories"),
                         keywords=article_data.get("keywords"),
+                        detected_entities=article_data.get("detected_entities"),
                         language=article_data.get("language"),
                         published_at=article_data.get("published_at"),
                         fetched_at=article_data.get("fetched_at"),
@@ -234,6 +257,7 @@ class PostgresService:
         try:
             with self.get_session() as session:
                 for i, article_data in enumerate(articles_data):
+                    article_data = self._ensure_detected_entities(article_data)
                     sentiment_result = sentiment_results[i] if sentiment_results and i < len(sentiment_results) else None
 
                     # Check if article already exists
@@ -252,6 +276,7 @@ class PostgresService:
                         existing.primary_asset = article_data.get("primary_asset", existing.primary_asset)
                         existing.categories = article_data.get("categories", existing.categories)
                         existing.keywords = article_data.get("keywords", existing.keywords)
+                        existing.detected_entities = article_data.get("detected_entities", existing.detected_entities)
                         existing.language = article_data.get("language", existing.language)
                         existing.published_at = article_data.get("published_at", existing.published_at)
                         existing.fetched_at = article_data.get("fetched_at", existing.fetched_at)
@@ -276,6 +301,7 @@ class PostgresService:
                             primary_asset=article_data.get("primary_asset"),
                             categories=article_data.get("categories"),
                             keywords=article_data.get("keywords"),
+                            detected_entities=article_data.get("detected_entities"),
                             language=article_data.get("language"),
                             published_at=article_data.get("published_at"),
                             fetched_at=article_data.get("fetched_at"),
@@ -300,7 +326,11 @@ class PostgresService:
         return saved_count
 
     def get_recent_articles(
-        self, limit: int = 100, hours: int = 24, asset: Optional[str] = None
+        self,
+        limit: int = 100,
+        hours: int = 24,
+        asset: Optional[str] = None,
+        entity: Optional[str] = None,
     ) -> List[Article]:
         """
         Get recent articles
@@ -309,6 +339,7 @@ class PostgresService:
             limit: Maximum number of results
             hours: Time window in hours
             asset: Optional asset filter
+            entity: Optional NER entity filter
 
         Returns:
             List of Article objects
@@ -320,13 +351,23 @@ class PostgresService:
                     select(Article)
                     .where(Article.published_at >= cutoff_time)
                     .order_by(desc(Article.published_at))
-                    .limit(limit)
+                    .limit(limit * 5 if entity else limit)
                 )
 
                 if asset:
                     stmt = stmt.where(Article.primary_asset == asset)
 
                 results = session.execute(stmt).scalars().all()
+                if entity:
+                    target = entity.strip().lower()
+                    results = [
+                        article
+                        for article in results
+                        if any(
+                            str(value).strip().lower() == target
+                            for value in (article.detected_entities or [])
+                        )
+                    ][:limit]
                 logger.debug(f"Retrieved {len(results)} articles")
                 return results
         except SQLAlchemyError as e:

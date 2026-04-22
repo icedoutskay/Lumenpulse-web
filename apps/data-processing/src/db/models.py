@@ -40,6 +40,7 @@ class Article(Base):
     
     # Keywords and metadata
     keywords = Column(JSON, nullable=True)  # Array of keywords
+    detected_entities = Column(JSON, nullable=True)  # NER entities detected in article text
     language = Column(String(10), nullable=True)
     
     # Timestamps
