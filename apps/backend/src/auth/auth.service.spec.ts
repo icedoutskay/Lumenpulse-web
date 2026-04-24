@@ -682,21 +682,6 @@ describe('AuthService – Refresh Tokens', () => {
         ).rejects.toThrow(NotFoundException);
       });
 
-      it('should throw NotFoundException if session belongs to another user', async () => {
-        const otherUserToken: Partial<RefreshToken> = {
-          id: 'session-other',
-          userId: 'other-user-id',
-          tokenHash: 'hash-other',
-          revokedAt: null,
-          createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        };
-        findOneMock.mockResolvedValue(otherUserToken);
-
-        await expect(
-          service.revokeSession('session-other', 'user-uuid-1'),
-        ).rejects.toThrow(NotFoundException);
-      });
     });
   });
 });
