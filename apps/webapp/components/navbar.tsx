@@ -22,7 +22,7 @@ export function Navbar() {
           <div className="flex-shrink-0 -ml-2">
             <Link href="/" className="flex items-center">
               <Image
-                src="/assets/starkpulse-03.svg"
+                src="/assets/lumenpulse-03.svg"
                 alt="LumenPulse Logo"
                 width={36}
                 height={36}
