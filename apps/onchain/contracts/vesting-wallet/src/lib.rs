@@ -8,7 +8,7 @@ mod token;
 use errors::VestingError;
 use events::{AdminChangedEvent, UpgradedEvent};
 use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
-use storage::{DataKey, VestingData};
+use storage::{DataKey, VestingData, LEDGER_BUMP, LEDGER_THRESHOLD};
 use token::transfer;
 
 #[contract]
@@ -49,6 +49,9 @@ impl VestingWalletContract {
         // Store admin address and token address
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Token, &token);
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
 
         Ok(())
     }
@@ -68,6 +71,9 @@ impl VestingWalletContract {
             .instance()
             .get(&DataKey::Admin)
             .ok_or(VestingError::NotInitialized)?;
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Verify admin identity
         if admin != stored_admin {
@@ -99,6 +105,9 @@ impl VestingWalletContract {
             .instance()
             .get(&DataKey::Token)
             .ok_or(VestingError::NotInitialized)?;
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
 
         let contract_address = env.current_contract_address();
 
@@ -109,6 +118,11 @@ impl VestingWalletContract {
             .persistent()
             .get::<_, VestingData>(&DataKey::Vesting(beneficiary.clone()))
         {
+            env.storage().persistent().extend_ttl(
+                &DataKey::Vesting(beneficiary.clone()),
+                LEDGER_THRESHOLD,
+                LEDGER_BUMP,
+            );
             let remaining = existing_vesting.total_amount - existing_vesting.claimed_amount;
             if remaining > 0 {
                 transfer(&env, &token, &contract_address, &admin, &remaining);
@@ -130,7 +144,12 @@ impl VestingWalletContract {
         // Store vesting data
         env.storage()
             .persistent()
-            .set(&DataKey::Vesting(beneficiary), &vesting);
+            .set(&DataKey::Vesting(beneficiary.clone()), &vesting);
+        env.storage().persistent().extend_ttl(
+            &DataKey::Vesting(beneficiary.clone()),
+            LEDGER_THRESHOLD,
+            LEDGER_BUMP,
+        );
 
         // Emit VestingCreated event
         events::VestingCreatedEvent {
@@ -150,16 +169,23 @@ impl VestingWalletContract {
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(VestingError::NotInitialized);
         }
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Require beneficiary authorization
         beneficiary.require_auth();
 
         // Get vesting data
+        let vesting_key = DataKey::Vesting(beneficiary.clone());
         let mut vesting: VestingData = env
             .storage()
             .persistent()
-            .get(&DataKey::Vesting(beneficiary.clone()))
+            .get(&vesting_key)
             .ok_or(VestingError::VestingNotFound)?;
+        env.storage()
+            .persistent()
+            .extend_ttl(&vesting_key, LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Get current time
         let current_time = env.ledger().timestamp();
@@ -178,6 +204,9 @@ impl VestingWalletContract {
             .instance()
             .get(&DataKey::Token)
             .ok_or(VestingError::NotInitialized)?;
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Transfer tokens from contract to beneficiary
         let contract_address = env.current_contract_address();
@@ -191,12 +220,20 @@ impl VestingWalletContract {
 
         // Update claimed amount
         vesting.claimed_amount += available_amount;
-        env.storage()
-            .persistent()
-            .set(&DataKey::Vesting(beneficiary), &vesting);
+
+        let remaining = vesting.total_amount - vesting.claimed_amount;
+
+        if remaining == 0 {
+            // State compaction: remove the entry once fully claimed to reclaim rent.
+            env.storage().persistent().remove(&vesting_key);
+        } else {
+            env.storage().persistent().set(&vesting_key, &vesting);
+            env.storage()
+                .persistent()
+                .extend_ttl(&vesting_key, LEDGER_THRESHOLD, LEDGER_BUMP);
+        }
 
         // Emit TokensClaimed event
-        let remaining = vesting.total_amount - vesting.claimed_amount;
         events::TokensClaimedEvent {
             beneficiary: vesting.beneficiary.clone(),
             amount_claimed: available_amount,
@@ -211,11 +248,15 @@ impl VestingWalletContract {
     /// This is a pure view method that returns how much a beneficiary could claim at the current time
     pub fn get_claimable(env: Env, beneficiary: Address) -> Result<i128, VestingError> {
         // Get vesting data
+        let key = DataKey::Vesting(beneficiary);
         let vesting: VestingData = env
             .storage()
             .persistent()
-            .get(&DataKey::Vesting(beneficiary))
+            .get(&key)
             .ok_or(VestingError::VestingNotFound)?;
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Get current time
         let current_time = env.ledger().timestamp();
@@ -228,20 +269,30 @@ impl VestingWalletContract {
 
     /// Get vesting data for a beneficiary
     pub fn get_vesting(env: Env, beneficiary: Address) -> Result<VestingData, VestingError> {
+        let key = DataKey::Vesting(beneficiary);
+        let data = env
+            .storage()
+            .persistent()
+            .get(&key)
+            .ok_or(VestingError::VestingNotFound)?;
         env.storage()
             .persistent()
-            .get(&DataKey::Vesting(beneficiary))
-            .ok_or(VestingError::VestingNotFound)
+            .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
+        Ok(data)
     }
 
     /// Get the available amount that can be claimed by a beneficiary
     pub fn get_available_amount(env: Env, beneficiary: Address) -> Result<i128, VestingError> {
         // Get vesting data
+        let key = DataKey::Vesting(beneficiary);
         let vesting: VestingData = env
             .storage()
             .persistent()
-            .get(&DataKey::Vesting(beneficiary))
+            .get(&key)
             .ok_or(VestingError::VestingNotFound)?;
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Get current time
         let current_time = env.ledger().timestamp();
@@ -254,18 +305,28 @@ impl VestingWalletContract {
 
     /// Get admin address
     pub fn get_admin(env: Env) -> Result<Address, VestingError> {
-        env.storage()
+        let admin = env
+            .storage()
             .instance()
             .get(&DataKey::Admin)
-            .ok_or(VestingError::NotInitialized)
+            .ok_or(VestingError::NotInitialized)?;
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
+        Ok(admin)
     }
 
     /// Get token address
     pub fn get_token(env: Env) -> Result<Address, VestingError> {
-        env.storage()
+        let token = env
+            .storage()
             .instance()
             .get(&DataKey::Token)
-            .ok_or(VestingError::NotInitialized)
+            .ok_or(VestingError::NotInitialized)?;
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
+        Ok(token)
     }
 
     /// Upgrade the contract WASM to a new hash.
@@ -281,6 +342,9 @@ impl VestingWalletContract {
             .instance()
             .get(&DataKey::Admin)
             .ok_or(VestingError::NotInitialized)?;
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
         if caller != admin {
             return Err(VestingError::Unauthorized);
         }
@@ -313,6 +377,9 @@ impl VestingWalletContract {
         }
         current_admin.require_auth();
         env.storage().instance().set(&DataKey::Admin, &new_admin);
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
         AdminChangedEvent {
             old_admin: current_admin,
             new_admin,

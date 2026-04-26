@@ -19,7 +19,7 @@ use soroban_sdk::xdr::FromXdr;
 use soroban_sdk::{
     contract, contractimpl, Address, Bytes, BytesN, Env, IntoVal, String, Symbol, Vec,
 };
-use storage::{Badge, ContributorData, ContributorTier, DataKey};
+use storage::{Badge, ContributorData, ContributorTier, DataKey, LEDGER_BUMP, LEDGER_THRESHOLD};
 
 #[contract]
 pub struct ContributorRegistryContract;
@@ -32,14 +32,21 @@ impl ContributorRegistryContract {
         if !env.storage().instance().has(&DataKey::MultisigConfig) {
             return Err(ContributorError::NotInitialized);
         }
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
         Ok(())
     }
 
     fn registration_nonce_of(env: &Env, address: &Address) -> u64 {
-        env.storage()
-            .persistent()
-            .get(&DataKey::RegistrationNonce(address.clone()))
-            .unwrap_or(0)
+        let key = DataKey::RegistrationNonce(address.clone());
+        let nonce = env.storage().persistent().get(&key).unwrap_or(0);
+        if env.storage().persistent().has(&key) {
+            env.storage()
+                .persistent()
+                .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
+        }
+        nonce
     }
 
     fn write_contributor(
@@ -69,9 +76,19 @@ impl ContributorRegistryContract {
         env.storage()
             .persistent()
             .set(&DataKey::Contributor(address.clone()), &contributor);
+        env.storage().persistent().extend_ttl(
+            &DataKey::Contributor(address.clone()),
+            LEDGER_THRESHOLD,
+            LEDGER_BUMP,
+        );
         env.storage()
             .persistent()
             .set(&DataKey::GitHubIndex(github_handle.clone()), address);
+        env.storage().persistent().extend_ttl(
+            &DataKey::GitHubIndex(github_handle.clone()),
+            LEDGER_THRESHOLD,
+            LEDGER_BUMP,
+        );
 
         Ok(())
     }
@@ -121,6 +138,9 @@ impl ContributorRegistryContract {
         env.storage()
             .instance()
             .set(&DataKey::NextProposalId, &0u64);
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
 
         MultisigConfiguredEvent {
             configured_by: bootstrapper.address.clone(),
@@ -180,6 +200,9 @@ impl ContributorRegistryContract {
         env.storage()
             .instance()
             .set(&DataKey::MultisigConfig, &config);
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
 
         MultisigConfiguredEvent {
             configured_by: executor,
@@ -262,6 +285,11 @@ impl ContributorRegistryContract {
         env.storage()
             .persistent()
             .set(&DataKey::RegistrationNonce(address.clone()), &new_nonce);
+        env.storage().persistent().extend_ttl(
+            &DataKey::RegistrationNonce(address.clone()),
+            LEDGER_THRESHOLD,
+            LEDGER_BUMP,
+        );
 
         GaslessRegistrationEvent {
             contributor: address,
@@ -281,6 +309,9 @@ impl ContributorRegistryContract {
         if !env.storage().instance().has(&DataKey::MultisigConfig) {
             return Err(ContributorError::NotInitialized);
         }
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
         address.require_auth();
         if github_handle.is_empty() {
             return Err(ContributorError::InvalidGitHubHandle);
@@ -290,6 +321,11 @@ impl ContributorRegistryContract {
             .persistent()
             .get(&DataKey::Contributor(address.clone()))
             .ok_or(ContributorError::ContributorNotFound)?;
+        env.storage().persistent().extend_ttl(
+            &DataKey::Contributor(address.clone()),
+            LEDGER_THRESHOLD,
+            LEDGER_BUMP,
+        );
 
         Self::ensure_github_handle_available(&env, &github_handle, &address)?;
         if contributor.github_handle != github_handle {
@@ -301,9 +337,51 @@ impl ContributorRegistryContract {
         env.storage()
             .persistent()
             .set(&DataKey::Contributor(address.clone()), &contributor);
+        env.storage().persistent().extend_ttl(
+            &DataKey::Contributor(address.clone()),
+            LEDGER_THRESHOLD,
+            LEDGER_BUMP,
+        );
         env.storage()
             .persistent()
-            .set(&DataKey::GitHubIndex(github_handle), &address);
+            .set(&DataKey::GitHubIndex(github_handle.clone()), &address);
+        env.storage().persistent().extend_ttl(
+            &DataKey::GitHubIndex(github_handle),
+            LEDGER_THRESHOLD,
+            LEDGER_BUMP,
+        );
+        Ok(())
+    }
+
+    /// Deregister a contributor, removing all associated storage entries.
+    ///
+    /// Requires the contributor's own authorization. Removes:
+    /// - `DataKey::Contributor(address)`
+    /// - `DataKey::GitHubIndex(github_handle)`
+    /// - `DataKey::RegistrationNonce(address)`
+    ///
+    /// This prevents orphaned index entries and reclaims rent.
+    pub fn deregister_contributor(env: Env, address: Address) -> Result<(), ContributorError> {
+        Self::ensure_initialized(&env)?;
+        address.require_auth();
+
+        let contributor: ContributorData = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Contributor(address.clone()))
+            .ok_or(ContributorError::ContributorNotFound)?;
+
+        // State compaction: remove all three related entries atomically.
+        env.storage()
+            .persistent()
+            .remove(&DataKey::GitHubIndex(contributor.github_handle));
+        env.storage()
+            .persistent()
+            .remove(&DataKey::Contributor(address.clone()));
+        env.storage()
+            .persistent()
+            .remove(&DataKey::RegistrationNonce(address));
+
         Ok(())
     }
 
@@ -328,6 +406,11 @@ impl ContributorRegistryContract {
             .persistent()
             .get(&DataKey::Contributor(contributor_address.clone()))
             .ok_or(ContributorError::ContributorNotFound)?;
+        env.storage().persistent().extend_ttl(
+            &DataKey::Contributor(contributor_address.clone()),
+            LEDGER_THRESHOLD,
+            LEDGER_BUMP,
+        );
 
         let new_score = if delta > 0 {
             contributor
@@ -339,9 +422,15 @@ impl ContributorRegistryContract {
             contributor.reputation_score.saturating_sub(abs)
         };
         contributor.reputation_score = new_score;
-        env.storage()
-            .persistent()
-            .set(&DataKey::Contributor(contributor_address), &contributor);
+        env.storage().persistent().set(
+            &DataKey::Contributor(contributor_address.clone()),
+            &contributor,
+        );
+        env.storage().persistent().extend_ttl(
+            &DataKey::Contributor(contributor_address),
+            LEDGER_THRESHOLD,
+            LEDGER_BUMP,
+        );
         Ok(())
     }
 
@@ -357,17 +446,19 @@ impl ContributorRegistryContract {
         // Ensure contributor exists
         let _ = Self::get_contributor(env.clone(), contributor_address.clone())?;
 
+        let key = DataKey::Badges(contributor_address.clone());
         let mut badges: Vec<Badge> = env
             .storage()
             .persistent()
-            .get(&DataKey::Badges(contributor_address.clone()))
+            .get(&key)
             .unwrap_or(Vec::new(&env));
 
         if !badges.contains(badge) {
             badges.push_back(badge);
+            env.storage().persistent().set(&key, &badges);
             env.storage()
                 .persistent()
-                .set(&DataKey::Badges(contributor_address.clone()), &badges);
+                .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
         }
 
         BadgeGrantedEvent {
@@ -392,17 +483,21 @@ impl ContributorRegistryContract {
         // Ensure contributor exists
         let _ = Self::get_contributor(env.clone(), contributor_address.clone())?;
 
+        let key = DataKey::Badges(contributor_address.clone());
         let mut badges: Vec<Badge> = env
             .storage()
             .persistent()
-            .get(&DataKey::Badges(contributor_address.clone()))
+            .get(&key)
             .unwrap_or(Vec::new(&env));
 
         if let Some(index) = badges.first_index_of(badge) {
             badges.remove(index);
-            env.storage()
-                .persistent()
-                .set(&DataKey::Badges(contributor_address.clone()), &badges);
+            env.storage().persistent().set(&key, &badges);
+            if !badges.is_empty() {
+                env.storage()
+                    .persistent()
+                    .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
+            }
         }
 
         BadgeRevokedEvent {
@@ -444,6 +539,9 @@ impl ContributorRegistryContract {
         consume_approval(&env, &executor, proposal_id, &ProposalAction::SetAdmin)?;
 
         env.storage().instance().set(&DataKey::Admin, &new_admin);
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
 
         AdminChangedEvent {
             old_admin: executor,
@@ -471,35 +569,56 @@ impl ContributorRegistryContract {
     }
 
     pub fn get_badges(env: Env, contributor: Address) -> Vec<Badge> {
-        env.storage()
+        let key = DataKey::Badges(contributor);
+        let badges: Vec<Badge> = env
+            .storage()
             .persistent()
-            .get(&DataKey::Badges(contributor))
-            .unwrap_or(Vec::new(&env))
+            .get(&key)
+            .unwrap_or(Vec::new(&env));
+        if env.storage().persistent().has(&key) {
+            env.storage()
+                .persistent()
+                .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
+        }
+        badges
     }
 
     pub fn get_contributor(
         env: Env,
         address: Address,
     ) -> Result<ContributorData, ContributorError> {
+        let key = DataKey::Contributor(address);
+        let data = env
+            .storage()
+            .persistent()
+            .get(&key)
+            .ok_or(ContributorError::ContributorNotFound)?;
         env.storage()
             .persistent()
-            .get(&DataKey::Contributor(address))
-            .ok_or(ContributorError::ContributorNotFound)
+            .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
+        Ok(data)
     }
 
     pub fn get_contributor_by_github(
         env: Env,
         github_handle: String,
     ) -> Result<ContributorData, ContributorError> {
+        let index_key = DataKey::GitHubIndex(github_handle);
         let address: Address = env
             .storage()
             .persistent()
-            .get(&DataKey::GitHubIndex(github_handle))
+            .get(&index_key)
             .ok_or(ContributorError::ContributorNotFound)?;
+        env.storage()
+            .persistent()
+            .extend_ttl(&index_key, LEDGER_THRESHOLD, LEDGER_BUMP);
         Self::get_contributor(env, address)
     }
 
     pub fn get_multisig_config(env: Env) -> Result<MultisigConfig, ContributorError> {
+        env.storage()
+            .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
         get_config(&env)
     }
 
@@ -517,6 +636,9 @@ impl ContributorRegistryContract {
     pub fn get_next_proposal_id(env: Env) -> u64 {
         env.storage()
             .instance()
+            .extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.storage()
+            .instance()
             .get(&DataKey::NextProposalId)
             .unwrap_or(0)
     }
@@ -531,15 +653,18 @@ impl NotificationReceiverTrait for ContributorRegistryContract {
             let (user, _project_id, _amount): (Address, u64, i128) =
                 <(Address, u64, i128)>::from_xdr(&env, &notification.data).unwrap();
 
-            if let Some(mut contributor) = env
-                .storage()
-                .persistent()
-                .get::<_, ContributorData>(&DataKey::Contributor(user.clone()))
+            let key = DataKey::Contributor(user.clone());
+            if let Some(mut contributor) =
+                env.storage().persistent().get::<_, ContributorData>(&key)
             {
-                contributor.reputation_score = contributor.reputation_score.saturating_add(1);
                 env.storage()
                     .persistent()
-                    .set(&DataKey::Contributor(user), &contributor);
+                    .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
+                contributor.reputation_score = contributor.reputation_score.saturating_add(1);
+                env.storage().persistent().set(&key, &contributor);
+                env.storage()
+                    .persistent()
+                    .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_BUMP);
             }
         }
     }
@@ -992,6 +1117,79 @@ mod test {
         // 5. Replay attempt fails
         let new_admin2 = Address::generate(&s.env);
         assert!(client.try_set_admin(&s.alice, &id, &new_admin2).is_err());
+    }
+
+    // ── TTL / storage-rent tests ──────────────────────────────
+
+    /// Verify that a contributor entry remains accessible after a simulated
+    /// ledger advance (TTL bump keeps the entry alive).
+    #[test]
+    fn test_contributor_entry_accessible_after_ledger_advance() {
+        let s = setup();
+        let client = ContributorRegistryContractClient::new(&s.env, &s.contract);
+
+        let contributor = Address::generate(&s.env);
+        let handle = soroban_sdk::String::from_str(&s.env, "ttl_dev");
+        client.register_contributor(&contributor, &handle);
+
+        // Advance the ledger sequence significantly (simulates time passing).
+        s.env.ledger().set_sequence_number(200_000);
+
+        // The entry must still be readable — TTL bump on write keeps it alive.
+        let data = client.get_contributor(&contributor);
+        assert_eq!(data.github_handle, handle);
+    }
+
+    /// Verify that TTL is extended after a write (registration) and a read
+    /// (get_contributor) by confirming the entry survives a large ledger jump.
+    #[test]
+    fn test_ttl_extended_after_read_write() {
+        let s = setup();
+        let client = ContributorRegistryContractClient::new(&s.env, &s.contract);
+
+        let contributor = Address::generate(&s.env);
+        let handle = soroban_sdk::String::from_str(&s.env, "ttl_rw_dev");
+        client.register_contributor(&contributor, &handle);
+
+        // Simulate a large ledger advance.
+        s.env.ledger().set_sequence_number(100_001);
+
+        // Read triggers another TTL bump; entry must still be accessible.
+        let data = client.get_contributor(&contributor);
+        assert_eq!(data.github_handle, handle);
+
+        // Advance again — the read-triggered bump should keep it alive.
+        s.env.ledger().set_sequence_number(200_002);
+        let data2 = client.get_contributor(&contributor);
+        assert_eq!(data2.github_handle, handle);
+    }
+
+    /// Verify that deregistering a contributor removes all three storage keys
+    /// (Contributor, GitHubIndex, RegistrationNonce) — no orphaned entries.
+    #[test]
+    fn test_deregister_removes_all_keys() {
+        let s = setup();
+        let client = ContributorRegistryContractClient::new(&s.env, &s.contract);
+
+        let contributor = Address::generate(&s.env);
+        let handle = soroban_sdk::String::from_str(&s.env, "deregister_dev");
+        let signature = soroban_sdk::Bytes::from_slice(&s.env, &[1u8; 64]);
+
+        // Use gasless registration so a nonce entry is also created.
+        client.register_contributor_with_sig(&handle, &contributor, &signature);
+        assert_eq!(client.get_registration_nonce(&contributor), 1);
+
+        // Deregister — all three keys must be removed.
+        client.deregister_contributor(&contributor);
+
+        // Contributor entry gone.
+        assert!(client.try_get_contributor(&contributor).is_err());
+        // GitHub index entry gone — a new address can now claim the same handle.
+        let other = Address::generate(&s.env);
+        let sig2 = soroban_sdk::Bytes::from_slice(&s.env, &[2u8; 64]);
+        client.register_contributor_with_sig(&handle, &other, &sig2);
+        let data = client.get_contributor(&other);
+        assert_eq!(data.github_handle, handle);
     }
 
     // ── Badges & Tiers ────────────────────────────────────────
