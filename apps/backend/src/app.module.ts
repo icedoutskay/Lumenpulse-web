@@ -43,6 +43,7 @@ import { GrantsModule } from './grants/grants.module';
 import { HealthModule } from './health/health.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
+import { ExportModule } from './export/export.module';
 
 @Module({
   imports: [
@@ -104,6 +105,7 @@ import { IdempotencyInterceptor } from './common/interceptors/idempotency.interc
     GrantsModule,
     WatchlistModule,
     OutboxModule,
+    ExportModule,
   ],
   controllers: [AppController, TestController, TestExceptionController],
   providers: [
