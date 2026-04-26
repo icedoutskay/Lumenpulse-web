@@ -24,6 +24,7 @@ import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
 import { StellarModule } from '../stellar/stellar.module';
 import { PriceModule } from '../price/price.module';
 import { MaterializedSnapshotService } from './materialized-snapshot.service';
+import { ProfilingModule } from '../common/profiling/profiling.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { MaterializedSnapshotService } from './materialized-snapshot.service';
     ExchangeRatesModule,
     StellarModule,
     PriceModule,
+    ProfilingModule,
   ],
   controllers: [PortfolioController],
   providers: [

@@ -24,6 +24,7 @@ import { PortfolioSnapshotQueueService } from './queue/portfolio-snapshot.queue.
 import { PortfolioSnapshotBatchStatus } from './queue/portfolio-snapshot.types';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 import { MaterializedSnapshotService } from './materialized-snapshot.service';
+import { QueryProfilerService } from '../common/profiling/query-profiler.service';
 
 @Injectable()
 export class PortfolioService {
@@ -42,6 +43,7 @@ export class PortfolioService {
     private readonly priceService: PriceService,
     private readonly snapshotQueueService: PortfolioSnapshotQueueService,
     private readonly materializedSnapshotService: MaterializedSnapshotService,
+    private readonly profiler: QueryProfilerService,
   ) {}
 
   /**
@@ -167,12 +169,16 @@ export class PortfolioService {
   ): Promise<PortfolioHistoryResponseDto> {
     const skip = (page - 1) * limit;
 
-    const [snapshots, total] = await this.snapshotRepository.findAndCount({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-      skip,
-      take: limit,
-    });
+    const [snapshots, total] = await this.profiler.profile(
+      () =>
+        this.snapshotRepository.findAndCount({
+          where: { userId },
+          order: { createdAt: 'DESC' },
+          skip,
+          take: limit,
+        }),
+      { label: 'PortfolioService.getPortfolioHistory', thresholdMs: 150 },
+    );
 
     const snapshotDtos: PortfolioSnapshotDto[] = snapshots.map((snapshot) => ({
       id: snapshot.id,
@@ -220,24 +226,24 @@ export class PortfolioService {
       relations: ['stellarAccounts'],
     });
 
-    const hasLinkedAccount =
-      user?.stellarAccounts && user.stellarAccounts.length > 0;
+        const hasLinkedAccount =
+          user?.stellarAccounts && user.stellarAccounts.length > 0;
 
-    if (!hasLinkedAccount) {
-      this.logger.log(`User ${userId} has no linked Stellar accounts`);
-      return {
-        totalValueUsd: '0.00',
-        assets: [],
-        lastUpdated: null,
-        hasLinkedAccount: false,
-      };
-    }
+        if (!hasLinkedAccount) {
+          this.logger.log(`User ${userId} has no linked Stellar accounts`);
+          return {
+            totalValueUsd: '0.00',
+            assets: [],
+            lastUpdated: null,
+            hasLinkedAccount: false,
+          };
+        }
 
-    // User has linked accounts, try to get the latest snapshot
-    const latestSnapshot = await this.snapshotRepository.findOne({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
+        // User has linked accounts, try to get the latest snapshot
+        const latestSnapshot = await this.snapshotRepository.findOne({
+          where: { userId },
+          order: { createdAt: 'DESC' },
+        });
 
     if (!latestSnapshot) {
       return {
