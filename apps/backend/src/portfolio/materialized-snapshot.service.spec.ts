@@ -237,14 +237,14 @@ describe('MaterializedSnapshotService', () => {
           assetIssuer: null,
           amount: '1000.0000',
           valueUsd: 100.0,
-          percentage: expectCloseTo(16.6667, 0.01),
+          percentage: expectCloseTo.create(16.6667, 0.01),
         },
         {
           assetCode: 'USDC',
           assetIssuer: 'issuer-abc',
           amount: '500.0000',
           valueUsd: 500.0,
-          percentage: expectCloseTo(83.3333, 0.01),
+          percentage: expectCloseTo.create(83.3333, 0.01),
         },
       ]);
     });
