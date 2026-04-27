@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
+/* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -44,14 +47,14 @@ export class AccessControlService implements IAccessControlService {
       // CIDR notation
       const [network, prefixLength] = range.split('/');
       const prefix = parseInt(prefixLength, 10);
-      
+
       // Convert IP addresses to integers for comparison
       const ipInt = this.ipToInt(ip);
       const networkInt = this.ipToInt(network);
-      
+
       // Create subnet mask
       const mask = (0xffffffff << (32 - prefix)) >>> 0;
-      
+
       // Check if IP is in the network
       return (ipInt & mask) === (networkInt & mask);
     } catch (error) {
@@ -64,7 +67,11 @@ export class AccessControlService implements IAccessControlService {
    * Convert IP address to integer
    */
   private ipToInt(ip: string): number {
-    return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+    return (
+      ip
+        .split('.')
+        .reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0
+    );
   }
 
   /**
@@ -76,7 +83,7 @@ export class AccessControlService implements IAccessControlService {
         where: { id: userId },
         select: ['role'],
       });
-      
+
       return user?.role === role;
     } catch (error) {
       this.logger.error(`Error checking role for user ${userId}:`, error);
@@ -93,7 +100,7 @@ export class AccessControlService implements IAccessControlService {
         where: { id: userId },
         select: ['role'],
       });
-      
+
       return user ? roles.includes(user.role) : false;
     } catch (error) {
       this.logger.error(`Error checking roles for user ${userId}:`, error);
@@ -110,7 +117,7 @@ export class AccessControlService implements IAccessControlService {
         where: { id: userId },
         select: ['role'],
       });
-      
+
       return user ? [user.role] : [];
     } catch (error) {
       this.logger.error(`Error getting roles for user ${userId}:`, error);
@@ -135,7 +142,7 @@ export class AccessControlService implements IAccessControlService {
     // Check ownership for user-owned resources
     if (resource.ownerId && context.userId) {
       const isOwner = resource.ownerId === context.userId;
-      
+
       if (isOwner) {
         return {
           granted: true,
@@ -145,8 +152,12 @@ export class AccessControlService implements IAccessControlService {
     }
 
     // Resource-specific permission logic
-    const granted = await this.checkResourcePermission(action, resource, context);
-    
+    const granted = await this.checkResourcePermission(
+      action,
+      resource,
+      context,
+    );
+
     return {
       granted,
       reason: granted ? undefined : 'insufficient_permissions',
@@ -166,27 +177,29 @@ export class AccessControlService implements IAccessControlService {
     resource: AccessControlResource,
     context: AccessControlContext,
   ): Promise<boolean> {
-    switch (resource.type) {
+    const resourceType = resource.type as ResourceType;
+
+    switch (resourceType) {
       case ResourceType.USER:
         return this.checkUserResourcePermission(action, resource, context);
-      
+
       case ResourceType.PORTFOLIO:
       case ResourceType.STELLAR_ACCOUNT:
         return this.checkUserOwnedResourcePermission(action, resource, context);
-      
+
       case ResourceType.GRANT:
         return this.checkGrantResourcePermission(action, resource, context);
-      
+
       case ResourceType.NEWS:
       case ResourceType.ANALYTICS:
         return this.checkPublicResourcePermission(action, resource, context);
-      
+
       case ResourceType.WEBHOOK:
         return this.checkWebhookResourcePermission(action, resource, context);
-      
+
       case ResourceType.METRICS:
         return this.checkMetricsResourcePermission(action, resource, context);
-      
+
       default:
         this.logger.warn(`Unknown resource type: ${resource.type}`);
         return false;
@@ -205,17 +218,20 @@ export class AccessControlService implements IAccessControlService {
     if (action === AccessAction.READ && context.userId === resource.id) {
       return true;
     }
-    
+
     // Users can update their own profile
     if (action === AccessAction.WRITE && context.userId === resource.id) {
       return true;
     }
-    
+
     // Reviewers can read user profiles
-    if (action === AccessAction.READ && context.userRole === UserRole.REVIEWER) {
+    if (
+      action === AccessAction.READ &&
+      context.userRole === UserRole.REVIEWER
+    ) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -231,12 +247,15 @@ export class AccessControlService implements IAccessControlService {
     if (resource.ownerId === context.userId) {
       return true;
     }
-    
+
     // Reviewers can read
-    if (action === AccessAction.READ && context.userRole === UserRole.REVIEWER) {
+    if (
+      action === AccessAction.READ &&
+      context.userRole === UserRole.REVIEWER
+    ) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -250,14 +269,16 @@ export class AccessControlService implements IAccessControlService {
   ): boolean {
     // Reviewers can read and write grants
     if (context.userRole === UserRole.REVIEWER) {
-      return [AccessAction.READ, AccessAction.WRITE].includes(action as AccessAction);
+      return [AccessAction.READ, AccessAction.WRITE].includes(
+        action as AccessAction,
+      );
     }
-    
+
     // Users can read grants
     if (action === AccessAction.READ && context.userRole === UserRole.USER) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -273,7 +294,7 @@ export class AccessControlService implements IAccessControlService {
     if (action === AccessAction.READ && context.userId) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -289,7 +310,7 @@ export class AccessControlService implements IAccessControlService {
     if (action === AccessAction.EXECUTE && context.webhookProvider) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -305,29 +326,29 @@ export class AccessControlService implements IAccessControlService {
     if (action === AccessAction.READ) {
       return !!(context.userId || context.metadata?.ipAllowed);
     }
-    
+
     return false;
   }
 
   /**
    * Check if a caller owns a specific resource
    */
-  async checkOwnership(
+  checkOwnership(
     userId: string,
     resource: AccessControlResource,
   ): Promise<boolean> {
     // Direct ownership check
     if (resource.ownerId === userId) {
-      return true;
+      return Promise.resolve(true);
     }
-    
+
     // For user resources, check if the resource ID matches the user ID
     if (resource.type === ResourceType.USER && resource.id === userId) {
-      return true;
+      return Promise.resolve(true);
     }
-    
+
     // Additional ownership checks could be added here for complex resources
-    return false;
+    return Promise.resolve(false);
   }
 
   /**
@@ -341,13 +362,13 @@ export class AccessControlService implements IAccessControlService {
     switch (verificationType) {
       case VerificationType.WEBHOOK_SIGNATURE:
         return this.verifyWebhookSignature(verificationData, rawData);
-      
+
       case VerificationType.IP_ALLOWLIST:
         return this.verifyIpAllowlist(verificationData);
-      
+
       case VerificationType.API_KEY:
         return this.verifyApiKey(verificationData);
-      
+
       default:
         return {
           trusted: false,
@@ -359,17 +380,19 @@ export class AccessControlService implements IAccessControlService {
   /**
    * Verify webhook signature
    */
-  private async verifyWebhookSignature(
+  private verifyWebhookSignature(
     verificationData: Record<string, any>,
     rawData?: Buffer,
   ): Promise<TrustedCallerResult> {
-    const { provider, signature, timestamp } = verificationData;
-    
+    const provider = verificationData.provider as string;
+    const signature = verificationData.signature as string;
+    const timestamp = verificationData.timestamp as string | undefined;
+
     if (!rawData) {
-      return {
+      return Promise.resolve({
         trusted: false,
         error: 'Raw data required for webhook verification',
-      };
+      });
     }
 
     try {
@@ -380,7 +403,7 @@ export class AccessControlService implements IAccessControlService {
         timestamp,
       );
 
-      return {
+      return Promise.resolve({
         trusted: result.valid,
         callerId: result.provider,
         error: result.error,
@@ -388,66 +411,70 @@ export class AccessControlService implements IAccessControlService {
           algorithm: result.algorithm,
           verifiedAt: result.verifiedAt,
         },
-      };
+      });
     } catch (error) {
       this.logger.error('Webhook verification error:', error);
-      return {
+      return Promise.resolve({
         trusted: false,
         error: 'Webhook verification failed',
-      };
+      });
     }
   }
 
   /**
    * Verify IP allowlist
    */
-  private async verifyIpAllowlist(
+  private verifyIpAllowlist(
     verificationData: Record<string, any>,
   ): Promise<TrustedCallerResult> {
-    const { ip, service } = verificationData;
-    
-    const allowed = await this.isIpAllowed(ip, service);
-    
-    return {
+    const ip = verificationData.ip as string;
+    const service = verificationData.service as string | undefined;
+
+    return this.isIpAllowed(ip, service).then((allowed) => ({
       trusted: allowed,
       callerId: allowed ? `ip:${ip}` : undefined,
       error: allowed ? undefined : 'IP not in allowlist',
       metadata: { service },
-    };
+    }));
   }
 
   /**
    * Verify API key (placeholder for future implementation)
    */
-  private async verifyApiKey(
-    verificationData: Record<string, any>,
+  private verifyApiKey(
+    _verificationData: Record<string, any>,
   ): Promise<TrustedCallerResult> {
     // Placeholder - implement based on your API key strategy
-    return {
+    return Promise.resolve({
       trusted: false,
       error: 'API key verification not implemented',
-    };
+    });
   }
 
   /**
    * Check if an IP address is in the allowlist for a specific service
    */
-  async isIpAllowed(ipAddress: string, service?: string): Promise<boolean> {
+  isIpAllowed(ipAddress: string, service?: string): Promise<boolean> {
     try {
       // Get service-specific or default allowlist
-      const configKey = service ? `${service.toUpperCase()}_ALLOWED_IPS` : 'ALLOWED_IPS';
+      const configKey = service
+        ? `${service.toUpperCase()}_ALLOWED_IPS`
+        : 'ALLOWED_IPS';
       const allowedIpsStr = this.configService.get<string>(configKey);
-      
+
       if (!allowedIpsStr) {
-        return false;
+        return Promise.resolve(false);
       }
 
-      const allowedIps = allowedIpsStr.split(',').map(ip => ip.trim());
-      
-      return allowedIps.some(allowedIp => this.isIpInRange(ipAddress, allowedIp));
+      const allowedIps = allowedIpsStr.split(',').map((ip) => ip.trim());
+
+      const isAllowed = allowedIps.some((allowedIp) =>
+        this.isIpInRange(ipAddress, allowedIp),
+      );
+      return Promise.resolve(isAllowed);
     } catch (error) {
       this.logger.error(`Error checking IP allowlist for ${ipAddress}:`, error);
-      return false;
+      return Promise.resolve(false);
     }
   }
 
@@ -455,12 +482,12 @@ export class AccessControlService implements IAccessControlService {
    * Create an access control context from request data
    */
   createContext(requestData: {
-    user?: any;
+    user?: { id?: string; role?: UserRole; stellarPublicKey?: string };
     ip?: string;
     headers?: Record<string, string>;
   }): AccessControlContext {
     const { user, ip, headers } = requestData;
-    
+
     return {
       userId: user?.id,
       userRole: user?.role,

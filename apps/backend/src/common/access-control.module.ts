@@ -9,11 +9,7 @@ import { AccessControlService } from './services/access-control.service';
  * Module providing shared access control functionality
  */
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User]),
-    ConfigModule,
-    WebhookModule,
-  ],
+  imports: [TypeOrmModule.forFeature([User]), ConfigModule, WebhookModule],
   providers: [AccessControlService],
   exports: [AccessControlService],
 })

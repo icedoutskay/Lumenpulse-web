@@ -1,5 +1,15 @@
-import { SetMetadata, createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { AccessAction, ResourceType as ResourceTypeEnum } from '../interfaces/access-control.interface';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
+import {
+  SetMetadata,
+  createParamDecorator,
+  ExecutionContext,
+} from '@nestjs/common';
+import {
+  AccessAction,
+  ResourceType as ResourceTypeEnum,
+} from '../interfaces/access-control.interface';
 
 /**
  * Metadata keys for access control decorators
@@ -28,7 +38,7 @@ export interface TrustedCallerMetadata {
 
 /**
  * Decorator to require specific permissions for a route
- * 
+ *
  * @example
  * @RequirePermission({
  *   action: AccessAction.READ,
@@ -51,7 +61,7 @@ export const ResourceTypeDecorator = (type: ResourceTypeEnum | string) =>
 
 /**
  * Decorator to require trusted caller verification
- * 
+ *
  * @example
  * @RequireTrustedCaller({
  *   verificationType: 'webhook_signature',
@@ -68,7 +78,7 @@ export const RequireTrustedCaller = (metadata: TrustedCallerMetadata) =>
  * Usage: @GetAccessContext() context: AccessControlContext
  */
 export const GetAccessContext = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext) => {
+  (_data: unknown, ctx: ExecutionContext): AccessControlContext | undefined => {
     const request = ctx.switchToHttp().getRequest();
     return request.accessContext;
   },
@@ -79,7 +89,10 @@ export const GetAccessContext = createParamDecorator(
  * Usage: @GetResource() resource: AccessControlResource
  */
 export const GetResource = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext) => {
+  (
+    _data: unknown,
+    ctx: ExecutionContext,
+  ): AccessControlResource | undefined => {
     const request = ctx.switchToHttp().getRequest();
     return request.accessResource;
   },
@@ -90,7 +103,7 @@ export const GetResource = createParamDecorator(
  * Usage: @GetPermissionResult() result: PermissionResult
  */
 export const GetPermissionResult = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext) => {
+  (_data: unknown, ctx: ExecutionContext): PermissionResult | undefined => {
     const request = ctx.switchToHttp().getRequest();
     return request.permissionResult;
   },

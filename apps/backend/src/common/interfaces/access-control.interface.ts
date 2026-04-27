@@ -6,19 +6,19 @@ import { UserRole } from '../../users/entities/user.entity';
 export interface AccessControlContext {
   /** User ID if authenticated via JWT */
   userId?: string;
-  
+
   /** User role if authenticated */
   userRole?: UserRole;
-  
+
   /** Stellar public key if available */
   stellarPublicKey?: string;
-  
+
   /** IP address of the caller */
   ipAddress?: string;
-  
+
   /** Webhook provider name if verified */
   webhookProvider?: string;
-  
+
   /** Additional context data */
   metadata?: Record<string, any>;
 }
@@ -29,13 +29,13 @@ export interface AccessControlContext {
 export interface AccessControlResource {
   /** Resource type (e.g., 'user', 'portfolio', 'grant') */
   type: string;
-  
+
   /** Resource identifier */
   id: string;
-  
+
   /** Resource owner ID if applicable */
   ownerId?: string;
-  
+
   /** Additional resource metadata */
   metadata?: Record<string, any>;
 }
@@ -46,10 +46,10 @@ export interface AccessControlResource {
 export interface PermissionRequest {
   /** The action being requested (e.g., 'read', 'write', 'delete') */
   action: string;
-  
+
   /** The resource being accessed */
   resource: AccessControlResource;
-  
+
   /** The caller context */
   context: AccessControlContext;
 }
@@ -60,10 +60,10 @@ export interface PermissionRequest {
 export interface PermissionResult {
   /** Whether access is granted */
   granted: boolean;
-  
+
   /** Reason for denial if access is not granted */
   reason?: string;
-  
+
   /** Additional metadata about the decision */
   metadata?: Record<string, any>;
 }
@@ -74,10 +74,10 @@ export interface PermissionResult {
 export interface TrustedCallerRequest {
   /** Type of verification (e.g., 'webhook', 'ip-allowlist', 'api-key') */
   verificationType: string;
-  
+
   /** Verification data (signature, IP, key, etc.) */
   verificationData: Record<string, any>;
-  
+
   /** Raw request data if needed for verification */
   rawData?: Buffer;
 }
@@ -88,13 +88,13 @@ export interface TrustedCallerRequest {
 export interface TrustedCallerResult {
   /** Whether the caller is trusted */
   trusted: boolean;
-  
+
   /** Identifier of the trusted caller (provider name, etc.) */
   callerId?: string;
-  
+
   /** Error message if verification failed */
   error?: string;
-  
+
   /** Additional verification metadata */
   metadata?: Record<string, any>;
 }
@@ -108,22 +108,22 @@ export interface IAccessControlService {
    * Check if a user has a specific role
    */
   hasRole(userId: string, role: UserRole): Promise<boolean>;
-  
+
   /**
    * Check if a user has any of the specified roles
    */
   hasAnyRole(userId: string, roles: UserRole[]): Promise<boolean>;
-  
+
   /**
    * Get all roles for a user
    */
   getUserRoles(userId: string): Promise<UserRole[]>;
-  
+
   /**
    * Check if a caller has permission to perform an action on a resource
    */
   checkPermission(request: PermissionRequest): Promise<PermissionResult>;
-  
+
   /**
    * Check if a caller owns a specific resource
    */
@@ -131,19 +131,19 @@ export interface IAccessControlService {
     userId: string,
     resource: AccessControlResource,
   ): Promise<boolean>;
-  
+
   /**
    * Verify if a caller is trusted (webhook, IP allowlist, etc.)
    */
   verifyTrustedCaller(
     request: TrustedCallerRequest,
   ): Promise<TrustedCallerResult>;
-  
+
   /**
    * Check if an IP address is in the allowlist for a specific service
    */
   isIpAllowed(ipAddress: string, service?: string): Promise<boolean>;
-  
+
   /**
    * Create an access control context from request data
    */
@@ -152,7 +152,7 @@ export interface IAccessControlService {
     ip?: string;
     headers?: Record<string, string>;
   }): AccessControlContext;
-  
+
   /**
    * Validate that a context has the required permissions for a resource
    */

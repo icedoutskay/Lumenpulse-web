@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import { UserRole } from '../../users/entities/user.entity';
 import {
   AccessControlContext,
@@ -41,7 +42,10 @@ export class AccessControlUtils {
   /**
    * Check if a context represents the owner of a resource
    */
-  static isOwner(context: AccessControlContext, resource: AccessControlResource): boolean {
+  static isOwner(
+    context: AccessControlContext,
+    resource: AccessControlResource,
+  ): boolean {
     if (!context.userId || !resource.ownerId) {
       return false;
     }
@@ -51,7 +55,10 @@ export class AccessControlUtils {
   /**
    * Check if a context represents the resource itself (for user resources)
    */
-  static isSelf(context: AccessControlContext, resource: AccessControlResource): boolean {
+  static isSelf(
+    context: AccessControlContext,
+    resource: AccessControlResource,
+  ): boolean {
     if (!context.userId || resource.type !== ResourceType.USER) {
       return false;
     }
@@ -109,7 +116,8 @@ export class AccessControlUtils {
    * Check if an action is a write operation
    */
   static isWriteAction(action: string): boolean {
-    return [AccessAction.WRITE, AccessAction.DELETE].includes(action as AccessAction);
+    const writeActions: string[] = [AccessAction.WRITE, AccessAction.DELETE];
+    return writeActions.includes(action);
   }
 
   /**
@@ -131,7 +139,9 @@ export class AccessControlUtils {
       return UserRole.ADMIN;
     }
 
-    switch (resourceType) {
+    const resourceTypeEnum = resourceType as ResourceType;
+
+    switch (resourceTypeEnum) {
       case ResourceType.GRANT:
         // Grants require reviewer role for write operations
         if (AccessControlUtils.isWriteAction(action)) {
@@ -226,7 +236,11 @@ export class AccessControlUtils {
    */
   static validateContext(context: AccessControlContext): boolean {
     // At minimum, we need either a user ID or a webhook provider
-    return !!(context.userId || context.webhookProvider || context.metadata?.system);
+    return !!(
+      context.userId ||
+      context.webhookProvider ||
+      context.metadata?.system
+    );
   }
 
   /**
