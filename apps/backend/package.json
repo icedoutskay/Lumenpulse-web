@@ -67,7 +67,8 @@
     "sharp": "^0.34.5",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "stellar-sdk": "^13.3.0"
+    "stellar-sdk": "^13.3.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^0.1.0",
@@ -120,6 +121,9 @@
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
+    ],
+    "setupFiles": [
+      "<rootDir>/../test/setup-env.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
