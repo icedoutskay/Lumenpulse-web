@@ -16,7 +16,6 @@ import {
   ResourceType,
   VerificationType,
 } from '../interfaces/access-control.interface';
-import * as ipRangeCheck from 'ip-range-check';
 
 /**
  * Concrete implementation of the shared access control interface
@@ -31,6 +30,42 @@ export class AccessControlService implements IAccessControlService {
     private readonly configService: ConfigService,
     private readonly webhookVerificationService: WebhookVerificationService,
   ) {}
+
+  /**
+   * Simple IP range checking utility
+   */
+  private isIpInRange(ip: string, range: string): boolean {
+    try {
+      if (!range.includes('/')) {
+        // Exact match
+        return ip === range;
+      }
+
+      // CIDR notation
+      const [network, prefixLength] = range.split('/');
+      const prefix = parseInt(prefixLength, 10);
+      
+      // Convert IP addresses to integers for comparison
+      const ipInt = this.ipToInt(ip);
+      const networkInt = this.ipToInt(network);
+      
+      // Create subnet mask
+      const mask = (0xffffffff << (32 - prefix)) >>> 0;
+      
+      // Check if IP is in the network
+      return (ipInt & mask) === (networkInt & mask);
+    } catch (error) {
+      this.logger.warn(`Error checking IP range ${ip} in ${range}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Convert IP address to integer
+   */
+  private ipToInt(ip: string): number {
+    return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+  }
 
   /**
    * Check if a user has a specific role
@@ -409,13 +444,7 @@ export class AccessControlService implements IAccessControlService {
 
       const allowedIps = allowedIpsStr.split(',').map(ip => ip.trim());
       
-      return allowedIps.some(allowedIp => {
-        // Support both exact match and CIDR notation
-        if (allowedIp.includes('/')) {
-          return ipRangeCheck(ipAddress, allowedIp);
-        }
-        return ipAddress === allowedIp;
-      });
+      return allowedIps.some(allowedIp => this.isIpInRange(ipAddress, allowedIp));
     } catch (error) {
       this.logger.error(`Error checking IP allowlist for ${ipAddress}:`, error);
       return false;

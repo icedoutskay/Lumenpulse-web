@@ -274,5 +274,13 @@ describe('AccessControlService', () => {
 
       expect(result).toBe(false);
     });
+
+    it('should handle invalid CIDR notation gracefully', async () => {
+      configService.get.mockReturnValue('invalid/cidr');
+
+      const result = await service.isIpAllowed('192.168.1.100');
+
+      expect(result).toBe(false);
+    });
   });
 });
